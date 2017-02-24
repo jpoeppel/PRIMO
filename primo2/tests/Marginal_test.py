@@ -94,6 +94,7 @@ class MarginalTest(unittest.TestCase):
     def test_get_probabilities_part_variable_list_array(self):
         m = Marginal.from_factor(self.factor)
         varName = self.factor.checkVar
+        #Use random values to avoid having to create tests for all possible outcomes
         value = random.choice(self.factor.values[varName])
         res = m.get_probabilities({varName: [value]}, returnDict=False)
         self.assertIsInstance(res, np.ndarray)
@@ -104,6 +105,7 @@ class MarginalTest(unittest.TestCase):
     def test_get_probabilities_part_variable_str_dict(self):
         m = Marginal.from_factor(self.factor)
         varName = self.factor.checkVar
+        #Use random values to avoid having to create tests for all possible outcomes
         value = random.choice(self.factor.values[varName])
         res = m.get_probabilities({varName: value}, returnDict=True)
         self.assertIsInstance(res, dict)
@@ -115,6 +117,7 @@ class MarginalTest(unittest.TestCase):
     def test_get_probabilities_part_variable_str_array(self):
         m = Marginal.from_factor(self.factor)
         varName = self.factor.checkVar
+        #Use random values to avoid having to create tests for all possible outcomes
         value = random.choice(self.factor.values[varName])
         res = m.get_probabilities({varName: value}, returnDict=False)
         self.assertIsInstance(res, np.ndarray)
@@ -154,6 +157,7 @@ class MarginalTest(unittest.TestCase):
             res = m.get_probabilities({checkVar: "unknown"})
             
             self.assertEqual(len(w), 1)
+            self.assertEqual(w[0].category, RuntimeWarning)
             self.assertEqual(str(w[0].message), "Unknown value ({}) for variable {}. Ignoring this variable.".format("unknown", checkVar))
             np.testing.assert_array_equal(res, self.factor.potentials)
         
@@ -169,10 +173,32 @@ class MarginalTest(unittest.TestCase):
         pass
     
     def test_marginalize(self):
-        pass
+        m = Marginal.from_factor(self.factor)
+        #Use random variables to avoid having to create tests for all possible outcomes
+        checkVar = random.choice(self.factor.variableOrder)
+        resm = m.marginalize(checkVar)
+        checkList = list(m.variables)
+        checkList.remove(checkVar)
+        self.assertEqual(resm.variables, checkList)
+        np.testing.assert_array_equal(resm.probabilities, self.factor.marginalize(checkVar).potentials)
     
     def test_marginalize_missing(self):
-        pass
+        m = Marginal.from_factor(self.factor)
+        #Use random variables to avoid having to create tests for all possible outcomes
+        checkVar = "NotThere"
+        resm = m.marginalize(checkVar)
+        checkList = list(m.variables)
+        checkList.remove(checkVar)
+        self.assertEqual(resm.variables, checkList)
+        np.testing.assert_array_equal(resm.probabilities, self.factor.marginalize(checkVar).potentials)
+        with warnings.catch_warnings(record=True) as w:
+            # Cause all warnings to always be triggered.
+            warnings.simplefilter("always")
+            res = m.marginalize(["A",checkVar])
+            self.assertEqual(len(w),1)
+            self.assertEqual(w[0].category, RuntimeWarning)
+            self.assertEqual(str(w[0].message), "Variable {} will be ignored since it is not contained in this marginal.".format(checkVar))
+            np.testing.assert_array_equal(res.probabilities, self.factor.marginalize("A").potentials)
     
 ######### Will not be run with all factors in setUp_test_factors, but with specific factors #########
     def test_get_probabilitites_multiple_variables_simple_dict(self):
@@ -301,7 +327,7 @@ def load_tests(loader, tests, pattern):
 #        test_cases.addTest(MarginalTest("test_get_probability_simple", f))
 #        test_cases.addTest(MarginalTest("test_get_probability_under_specified", f))
 #        test_cases.addTest(MarginalTest("test_get_probability_fully_specified", f))
-#        test_cases.addTest(MarginalTest("test_marginalize", f))
+        test_cases.addTest(MarginalTest("test_marginalize", f))
 #        test_cases.addTest(MarginalTest("test_marginalize_missing", f))
 
     test_cases.addTest(MarginalTest("test_get_probabilities_node", factors[0]))

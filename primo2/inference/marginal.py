@@ -24,6 +24,22 @@ class Marginal(object):
         self.values = {}
         self.probabilities = 0
         
+        
+    def copy(self):
+        """
+            Creates a (deep) copy of this marginal.
+            
+            Returns
+            -------
+                Marginal
+                The copied marginal
+        """
+        res = Marginal()
+        res.variables = list(self.variables)
+        res.values = dict(self.values)
+        res.probabilities = np.copy(self.probabilities)
+        return res
+    
     @classmethod
     def from_factor(cls, factor):
         """
@@ -61,7 +77,7 @@ class Marginal(object):
             
             Parameter
             ---------
-            variables: dict, RandomNode, string, optional.
+            variables: Dict, RandomNode, String, optional.
                 Dictionary containing the desired variables (the actual RandomNode
                 or their Name) as keys and either an instantiation or a list 
                 of instantiations of interest as values. An empty list will be
@@ -106,12 +122,21 @@ class Marginal(object):
             except KeyError:
                 variables = {variables: []}
                 
-        #Check variables in order to raise consistent warnings:
+        #Check variables in order to raise consistent warnings and make sure
+        #values are in unified form
         for v in variables:
             if not v in self.variables:
                 warnings.warn("The variable {} is not part of this marginal "\
                               "and will be ignored.".format(v),
                               RuntimeWarning)
+            else:
+                #For compatibility with both python2 and python3, we need both checks
+                #since in python3 strings also have __iter__ which makes it not
+                #possible to distinguish between list-like objects and strings
+                #easily.
+                if not hasattr(variables[v], "__iter__") or isinstance(variables[v],str):
+                    #Catch the case of {"A":"True"}
+                    variables[v] = [variables[v]]
                 
         if returnDict:
             #If we want to return dicts, just call this method multiple
@@ -120,8 +145,6 @@ class Marginal(object):
             res = {}            
             for var in variables:
                 tmp = {}
-                if not hasattr(variables[var], "__iter__"):
-                    variables[var] = [variables[var]]
                 for val in variables[var]:
                     tmpVariables = dict(variables)
                     tmpVariables[var] = [val]
@@ -129,29 +152,62 @@ class Marginal(object):
                 res[var] = tmp
             
             if len(res) == 1:
+                #Omit outer dictionary in the trivial case
                 return res.values()[0]
             return res
             
         index = []        
         for v in self.variables:
-            if v in variables:
+            if v in variables and len(variables[v]) > 0:
                 try:
-                    if isinstance(variables[v], str):
-                        #In case we simply have a string, add only that index
-                        index.append([self.values[v].index(variables[v])])
-                    elif len(variables[v]) == 0:
-                        #If we have an empty list, we use the entire slice
-                        index.append(range(len(self.values[v])))
-                    else:
-                        #Otherwise we just take the indices of interest
-                        index.append([self.values[v].index(value) for value in variables[v]])
+                    #Otherwise we just take the indices of interest
+                    index.append([self.values[v].index(value) for value in variables[v]])
                 except ValueError:
                     warnings.warn("Unknown value ({}) for variable {}. "\
-                                  "Ignoring this variable.".format(variables[v], v))
+                                  "Ignoring this variable.".format(value, v), 
+                                  RuntimeWarning)
                     index.append(range(len(self.values[v])))
             else:
+                #If a variable is not specified or we have an empty list, 
+                #we use the entire slice
                 index.append(range(len(self.values[v])))
             
         res = np.squeeze(np.copy(self.probabilities[np.ix_(*index)]))
+            
+        return res
+
+
+    def marginalize(self, variables):
+        """
+            Allows to marginalize out one or multiple variables.
+            
+            Parameters
+            ----------
+            variables: RandomNode, String, [RandomNode,], [String,]
+                The variable(s) that should be marginalized out. Variables
+                that were not part of the Marginal will be ignored but will
+                raise a Warning.
+                
+            Returns
+            --------
+                Marginal
+                The marginal resulting in summing out the given variables.
+        """
+        #For compatibility with both python2 and python3, we need both checks
+        #since in python3 strings also have __iter__ which makes it not
+        #possible to distinguish between list-like objects and strings
+        #easily.
+        if not hasattr(variables, "__iter__") or isinstance(variables,str):
+            variables = [variables]
+            
+        res = self.copy()
+        for v in variables:
+            try:
+                res.probabilities = np.sum(res.probabilities, axis=res.variables.index(v))
+                del res.values[v]
+                res.variables.remove(v)
+            except ValueError:
+                warnings.warn("Variable {} will be ignored since it is not " \
+                              "contained in this marginal.".format(v), RuntimeWarning)
             
         return res
