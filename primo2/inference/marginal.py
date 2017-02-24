@@ -95,8 +95,7 @@ class Marginal(object):
             try:
                 variables = {variables: self.values[variables]}
             except KeyError as e:
-                #TODO Change!
-                raise e
+                raise ValueError("This marginal does not contain the variable '{}'.".format(variables))
                 
         if returnDict:
             #If we want to return dicts, just call this method multiple
@@ -131,7 +130,7 @@ class Marginal(object):
                         #Otherwise we just take the indices of interest
                         index.append([self.values[v].index(value) for value in variables[v]])
                 except ValueError:
-                    raise ValueError("There is no potential for variable {} with values {} in this factor.".format(v, variables[v]))
+                    raise ValueError("This marginal does not contain the variable '{}'.".format(v))
             else:
                 index.append(range(len(self.values[v])))
                     
