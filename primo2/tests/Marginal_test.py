@@ -7,6 +7,7 @@ Created on Thu Feb 23 14:09:48 2017
 """
 
 import unittest
+import warnings
 
 import numpy as np
 
@@ -14,6 +15,7 @@ import random
 
 from primo2.inference.factor import Factor
 from primo2.inference.marginal import Marginal
+from primo2.nodes import DiscreteNode
 
 class MarginalTest(unittest.TestCase):
     
@@ -123,10 +125,40 @@ class MarginalTest(unittest.TestCase):
     def test_get_probabilitites_unknown_variable(self):
         m = Marginal.from_factor(self.factor)
         wrongVar = self.factor.wrongVar
-        with self.assertRaises(ValueError) as cm:
+        with warnings.catch_warnings(record=True) as w:
+            # Cause all warnings to always be triggered.
+            warnings.simplefilter("always")
+            
             m.get_probabilities(wrongVar)
-        self.assertEqual(str(cm.exception), "This marginal does not contain the variable '{}'.".format(wrongVar))
-                
+            self.assertEqual(len(w), 1)
+            self.assertEqual(w[0].category, RuntimeWarning)
+            self.assertEqual(str(w[0].message), "The variable {} is not part of this marginal and will be ignored.".format(wrongVar))
+        
+        
+        with warnings.catch_warnings(record=True) as w:
+            # Cause all warnings to always be triggered.
+            warnings.simplefilter("always")
+            
+            m.get_probabilities({wrongVar:[]})
+            self.assertEqual(len(w), 1)
+            self.assertEqual(w[0].category, RuntimeWarning)
+            self.assertEqual(str(w[0].message), "The variable {} is not part of this marginal and will be ignored.".format(wrongVar))
+        
+    def test_get_probabilitites_unknown_value(self):
+        m = Marginal.from_factor(self.factor)
+        checkVar = self.factor.checkVar
+        with warnings.catch_warnings(record=True) as w:
+            # Cause all warnings to always be triggered.
+            warnings.simplefilter("always")
+            
+            res = m.get_probabilities({checkVar: "unknown"})
+            
+            self.assertEqual(len(w), 1)
+            self.assertEqual(str(w[0].message), "Unknown value ({}) for variable {}. Ignoring this variable.".format("unknown", checkVar))
+            np.testing.assert_array_equal(res, self.factor.potentials)
+        
+        
+        
     def test_get_probability_simple(self):
         pass
     
@@ -150,13 +182,15 @@ class MarginalTest(unittest.TestCase):
         self.assertIsInstance(res, dict)
         for k in res:
             for v in res[k]:
-                np.testing.assert_array_equal(res[k][v], self.factor.get_potential({"A": ["2"], "B":["Apples"]}))
+                np.testing.assert_array_equal(res[k][v], 
+                        self.factor.get_potential({"A": ["2"], "B":["Apples"]}))
                 
         res = m.get_probabilities({"A": "2", "B": ["Apples"]}, returnDict=True)
         self.assertIsInstance(res, dict)
         for k in res:
             for v in res[k]:
-                np.testing.assert_array_equal(res[k][v], self.factor.get_potential({"A": ["2"], "B":["Apples"]}))
+                np.testing.assert_array_equal(res[k][v], 
+                        self.factor.get_potential({"A": ["2"], "B":["Apples"]}))
                 
                 
     def test_get_probabilitites_multiple_variables_complex_dict(self):
@@ -168,12 +202,11 @@ class MarginalTest(unittest.TestCase):
             for v in res[k]:
                 if k == "A":
                     np.testing.assert_array_equal(res[k][v], 
-                                                  self.factor.get_potential({"A": ["2"], 
-                                                                             "B":["Apples","Peaches"]}))
+                          self.factor.get_potential({"A": ["2"], 
+                                                     "B":["Apples","Peaches"]}))
                 else:
                     np.testing.assert_array_equal(res[k][v], 
-                                                  self.factor.get_potential({"A": ["2"], 
-                                                                            "B":[v]}))
+                          self.factor.get_potential({"A": ["2"], "B":[v]}))
                 
                 
         res = m.get_probabilities({"A": ["2","1"], "B": ["Apples", "Peaches"]}, returnDict=True)
@@ -182,12 +215,11 @@ class MarginalTest(unittest.TestCase):
             for v in res[k]:
                 if k == "A":
                     np.testing.assert_array_equal(res[k][v], 
-                                                  self.factor.get_potential({"A": [v], 
-                                                                             "B":["Apples","Peaches"]}))
+                          self.factor.get_potential({"A": [v], 
+                                                     "B":["Apples","Peaches"]}))
                 else:
                     np.testing.assert_array_equal(res[k][v], 
-                                                  self.factor.get_potential({"A": ["2","1"], 
-                                                                             "B":[v]}))
+                          self.factor.get_potential({"A": ["2","1"], "B":[v]}))
                 
     
     def test_get_probabilitites_multiple_variables_simple_array(self):
@@ -209,14 +241,26 @@ class MarginalTest(unittest.TestCase):
         res = m.get_probabilities({"A": "2", "B": ["Apples", "Peaches"]}, returnDict=False)
         self.assertIsInstance(res, np.ndarray)
         np.testing.assert_array_equal(res, 
-                                      self.factor.get_potential({"A": ["2"], "B":["Apples", "Peaches"]}))
+                          self.factor.get_potential({"A": ["2"], 
+                                                     "B":["Apples", "Peaches"]}))
                 
                 
         res = m.get_probabilities({"A": ["2","1"], "B": ["Apples", "Peaches"]}, returnDict=False)
         self.assertIsInstance(res, np.ndarray)
         np.testing.assert_array_equal(res, 
-                                      self.factor.get_potential({"A": ["2","1"], "B":["Apples", "Peaches"]}))
+                          self.factor.get_potential({"A": ["2","1"], 
+                                                     "B":["Apples", "Peaches"]}))
     
+    
+    def test_get_probabilities_node(self):
+        #Uses f
+        m = Marginal.from_factor(self.factor)
+        n = DiscreteNode("A")
+        res = m.get_probabilities(n)
+        np.testing.assert_array_equal(res, self.factor.potentials)
+        res = m.get_probabilities({n:[]}, returnDict=True)
+        for k in res:
+            np.testing.assert_array_equal(res[k], self.factor.get_potential({"A":[k]}))
     
 def setUp_test_factors():
     f = Factor()
@@ -253,12 +297,14 @@ def load_tests(loader, tests, pattern):
         test_cases.addTest(MarginalTest("test_get_probabilities_part_variable_list_dict", f))
         
         test_cases.addTest(MarginalTest("test_get_probabilitites_unknown_variable", f))
+        test_cases.addTest(MarginalTest("test_get_probabilitites_unknown_value", f))
 #        test_cases.addTest(MarginalTest("test_get_probability_simple", f))
 #        test_cases.addTest(MarginalTest("test_get_probability_under_specified", f))
 #        test_cases.addTest(MarginalTest("test_get_probability_fully_specified", f))
 #        test_cases.addTest(MarginalTest("test_marginalize", f))
 #        test_cases.addTest(MarginalTest("test_marginalize_missing", f))
 
+    test_cases.addTest(MarginalTest("test_get_probabilities_node", factors[0]))
     test_cases.addTest(MarginalTest("test_get_probabilitites_multiple_variables_simple_dict", factors[1]))
     test_cases.addTest(MarginalTest("test_get_probabilitites_multiple_variables_simple_array", factors[1]))
     test_cases.addTest(MarginalTest("test_get_probabilitites_multiple_variables_complex_dict", factors[1]))

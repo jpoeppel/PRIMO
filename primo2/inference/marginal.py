@@ -7,6 +7,7 @@ Created on Thu Feb 23 13:37:05 2017
 """
 
 import numpy as np
+import warnings
 
 class Marginal(object):
     
@@ -60,14 +61,22 @@ class Marginal(object):
             
             Parameter
             ---------
-            variables: dict, string, optional.
-                Dictionary containing the desired variable names as keys and
-                either an instantiation or a list of instantiations of interest 
-                as values. For a marginal containing the binary variables A and B, 
+            variables: dict, RandomNode, string, optional.
+                Dictionary containing the desired variables (the actual RandomNode
+                or their Name) as keys and either an instantiation or a list 
+                of instantiations of interest as values. An empty list will be
+                interpreted as ALL values for that variable.
+                For a marginal containing the binary variables A and B, 
                 get_probabilities({"A":"True"}) and get_probabilities({"A":["True"]})
                 will return the probabilties P(A=True, B=True) and 
-                P(A=True, B=False). Whereas get_probabilities({"A":"True", "B":"False"})
-                will only return P(A=True,B=False).
+                P(A=True, B=False). 
+                Whereas get_probabilities({"A":"True", "B":"False"}) will only 
+                return P(A=True, B=False).
+                
+                Any variable that is not part of the marginal will issue a
+                warning and will be ignored. A variable is also ignored if an
+                unknown instantiation was set for it.
+                
                 
             returnDict: Boolean, optional (default: False)
                 Specifies if the probabilities should be returned as a dictionary
@@ -91,11 +100,18 @@ class Marginal(object):
         
         if not variables:
             variables = {}
-        elif isinstance(variables, str):
+        elif not isinstance(variables, dict):
             try:
                 variables = {variables: self.values[variables]}
-            except KeyError as e:
-                raise ValueError("This marginal does not contain the variable '{}'.".format(variables))
+            except KeyError:
+                variables = {variables: []}
+                
+        #Check variables in order to raise consistent warnings:
+        for v in variables:
+            if not v in self.variables:
+                warnings.warn("The variable {} is not part of this marginal "\
+                              "and will be ignored.".format(v),
+                              RuntimeWarning)
                 
         if returnDict:
             #If we want to return dicts, just call this method multiple
@@ -104,7 +120,7 @@ class Marginal(object):
             res = {}            
             for var in variables:
                 tmp = {}
-                if isinstance(variables[var], str):
+                if not hasattr(variables[var], "__iter__"):
                     variables[var] = [variables[var]]
                 for val in variables[var]:
                     tmpVariables = dict(variables)
@@ -124,17 +140,17 @@ class Marginal(object):
                         #In case we simply have a string, add only that index
                         index.append([self.values[v].index(variables[v])])
                     elif len(variables[v]) == 0:
-#                        If we have an empty list, we use the entire slice
+                        #If we have an empty list, we use the entire slice
                         index.append(range(len(self.values[v])))
                     else:
                         #Otherwise we just take the indices of interest
                         index.append([self.values[v].index(value) for value in variables[v]])
                 except ValueError:
-                    raise ValueError("This marginal does not contain the variable '{}'.".format(v))
+                    warnings.warn("Unknown value ({}) for variable {}. "\
+                                  "Ignoring this variable.".format(variables[v], v))
+                    index.append(range(len(self.values[v])))
             else:
                 index.append(range(len(self.values[v])))
-                    
-        
             
         res = np.squeeze(np.copy(self.probabilities[np.ix_(*index)]))
             
