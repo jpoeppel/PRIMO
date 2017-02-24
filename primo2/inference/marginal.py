@@ -71,17 +71,20 @@ class Marginal(object):
                 
             returnDict: Boolean, optional (default: False)
                 Specifies if the probabilities should be returned as a dictionary
-                of the form {variable: probabilities} (if set to true) or as
+                of the form {variable: {value: probabilities}} (if set to true) or as
                 a compact np.array with one dimension for each variable, according
                 to the order given in self.variables. The entries within each
                 dimension correspond to the values specified with the same 
                 indices in self.values for that variable.
+                In the simple case where only one variable is desired and a 
+                dictionary should be returned, the outer dictionary is omitted.
                 
             Returns
             -------
                 dict or np.array
-                The probabilities for the desired variables and their instantiations.            
-                
+                The probabilities for the desired variables and their instantiations.
+                See the optional returnDict parameter for more information about
+                the return type.                
         """
         
         

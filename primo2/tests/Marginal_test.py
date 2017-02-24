@@ -36,8 +36,7 @@ class MarginalTest(unittest.TestCase):
         res = m.get_probabilities(varName, returnDict=True)
         self.assertIsInstance(res, dict)
         for k in res:
-#            self.assertEqual(res[k], self.factor.potentials[self.factor.values[varName].index(k)])
-            np.testing.assert_array_equal(res[k], self.factor.potentials[self.factor.values[varName].index(k)])
+            np.testing.assert_array_equal(res[k], self.factor.get_potential({varName:[k]}))
         pass
     
     def test_get_probabilities_entire_variable_str_array(self):
@@ -53,7 +52,7 @@ class MarginalTest(unittest.TestCase):
         res = m.get_probabilities({varName: self.factor.values[varName]}, returnDict=True)
         self.assertIsInstance(res, dict)
         for k in res:
-            np.testing.assert_array_equal(res[k], self.factor.potentials[self.factor.values[varName].index(k)])
+            np.testing.assert_array_equal(res[k], self.factor.get_potential({varName:[k]}))
     
     def test_get_probabilities_entire_variable_list_array(self):
         m = Marginal.from_factor(self.factor)
@@ -150,7 +149,7 @@ def setUp_test_factors():
     f2.values = {"A": ["1","2","3"], "B":["Apples", "Peaches"]}
     f2.variables = {"A":0, "B":1}
     f2.potentials = np.array([[0.2,0.1], [0.15,0.05], [0.27,0.23]])
-    f2.checkVar = "A"
+    f2.checkVar = "B"
     f2.wrongVar = "C"
     return [f,f2]
     
