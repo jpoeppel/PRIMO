@@ -96,50 +96,50 @@ class VariableEliminationTest(unittest.TestCase):
         bn.add_node(n2)
         bn.add_edge(n1,n2)
         res = VariableElimination.naive_marginals(bn, ["a"])
-        np.testing.assert_array_almost_equal(res.get_potential(), np.array([0.0, 0.0]))
+        np.testing.assert_array_almost_equal(res.get_probabilities(), np.array([0.0, 0.0]))
         
     def test_naive_marginals(self):
-        resFactor = VariableElimination.naive_marginals(self.bn, ["winter"])
-        np.testing.assert_array_almost_equal(resFactor.get_potential(), np.array([0.6, 0.4]))
+        resMarginal = VariableElimination.naive_marginals(self.bn, ["winter"])
+        np.testing.assert_array_almost_equal(resMarginal.get_probabilities(), np.array([0.6, 0.4]))
         
     def test_naive_marginal_evidence_trivial(self):
-        resFactor = VariableElimination.naive_marginals(self.bn, ["rain"], {"winter": "true"})
-        np.testing.assert_array_almost_equal(resFactor.get_potential(), np.array([0.8, 0.2]))
+        resMarginal = VariableElimination.naive_marginals(self.bn, ["rain"], {"winter": "true"})
+        np.testing.assert_array_almost_equal(resMarginal.get_probabilities(), np.array([0.8, 0.2]))
         
     def test_naive_marginal_evidence_trivial_multiple_evidence(self):
-        resFactor = VariableElimination.naive_marginals(self.bn, ["wet_grass"], {"sprinkler": "true", "rain": "false"})
-        np.testing.assert_array_almost_equal(resFactor.get_potential(), np.array([0.1, 0.9]))
+        resMarginal = VariableElimination.naive_marginals(self.bn, ["wet_grass"], {"sprinkler": "true", "rain": "false"})
+        np.testing.assert_array_almost_equal(resMarginal.get_probabilities(), np.array([0.1, 0.9]))
         
     def test_naive_marginal_evidence(self):
-        resFactor = VariableElimination.naive_marginals(self.bn, ["wet_grass"], {"winter": "true"})
-        np.testing.assert_array_almost_equal(resFactor.get_potential(), np.array([0.668, 0.332]))
+        resMarginal = VariableElimination.naive_marginals(self.bn, ["wet_grass"], {"winter": "true"})
+        np.testing.assert_array_almost_equal(resMarginal.get_probabilities(), np.array([0.668, 0.332]))
         
     def test_naive_marginal_evidence_multiple_evidence(self):
-        resFactor = VariableElimination.naive_marginals(self.bn, ["wet_grass"], {"winter": "true", "rain": "false"})
-        np.testing.assert_array_almost_equal(resFactor.get_potential(), np.array([0.02, 0.98]))
+        resMarginal = VariableElimination.naive_marginals(self.bn, ["wet_grass"], {"winter": "true", "rain": "false"})
+        np.testing.assert_array_almost_equal(resMarginal.get_probabilities(), np.array([0.02, 0.98]))
         
 
         
     def test_bucket_marginals(self):
-        resFactor = VariableElimination.bucket_marginals(self.bn, ["winter"])
-        np.testing.assert_array_almost_equal(resFactor.get_potential(), np.array([0.6, 0.4]))
+        resMarginal = VariableElimination.bucket_marginals(self.bn, ["winter"])
+        np.testing.assert_array_almost_equal(resMarginal.get_probabilities(), np.array([0.6, 0.4]))
 #        
     def test_bucket_marginal_evidence_trivial(self):
-        resFactor = VariableElimination.bucket_marginals(self.bn, ["rain"], {"wet_grass": "false"})
-        np.testing.assert_array_almost_equal(resFactor.get_potential(), np.array([0.158858, 0.841142]))
+        resMarginal = VariableElimination.bucket_marginals(self.bn, ["rain"], {"wet_grass": "false"})
+        np.testing.assert_array_almost_equal(resMarginal.get_probabilities(), np.array([0.158858, 0.841142]))
         
     def test_bucket_marginal_evidence_trivial_multiple_evidence(self):
-        resFactor = VariableElimination.bucket_marginals(self.bn, ["wet_grass"], {"sprinkler": "true", "rain": "false"})
-        np.testing.assert_array_almost_equal(resFactor.get_potential(), np.array([0.1, 0.9]))
+        resMarginal = VariableElimination.bucket_marginals(self.bn, ["wet_grass"], {"sprinkler": "true", "rain": "false"})
+        np.testing.assert_array_almost_equal(resMarginal.get_probabilities(), np.array([0.1, 0.9]))
     
         
     def test_bucket_marginal_evidence(self):
-        resFactor = VariableElimination.bucket_marginals(self.bn, ["wet_grass"], {"winter": "true"})
-        np.testing.assert_array_almost_equal(resFactor.get_potential(), np.array([0.668, 0.332]))
+        resMarginal = VariableElimination.bucket_marginals(self.bn, ["wet_grass"], {"winter": "true"})
+        np.testing.assert_array_almost_equal(resMarginal.get_probabilities(), np.array([0.668, 0.332]))
         
     def test_bucket_marginal_evidence_multiple_evidence(self):
-        resFactor = VariableElimination.bucket_marginals(self.bn, ["wet_grass"], {"winter": "true", "rain": "false"})
-        np.testing.assert_array_almost_equal(resFactor.get_potential(), np.array([0.02, 0.98]))
+        resMarginal = VariableElimination.bucket_marginals(self.bn, ["wet_grass"], {"winter": "true", "rain": "false"})
+        np.testing.assert_array_almost_equal(resMarginal.get_probabilities(), np.array([0.02, 0.98]))
         
     ### TODO check multiple marginals
 #    def test_bucket_multiple_marginals(self):
@@ -163,7 +163,7 @@ class FactorEliminationTest(unittest.TestCase):
         bn.add_edge(n1,n2)
         ft = FactorTree.create_jointree(bn)
         res = ft.marginals(["a"])
-        np.testing.assert_array_almost_equal(res.get_potential(), np.array([0.0, 0.0]))
+        np.testing.assert_array_almost_equal(res.get_probabilities(), np.array([0.0, 0.0]))
         
     def test_create_jointree(self):
         order = ["slippery_road", "wet_grass", "sprinkler", "winter", "rain"]
@@ -180,44 +180,44 @@ class FactorEliminationTest(unittest.TestCase):
         
     def test_jointree_marginals(self):
         ft = FactorTree.create_jointree(self.bn)
-        resFactor = ft.marginals(["winter"])
-        np.testing.assert_array_almost_equal(resFactor.get_potential(), np.array([0.6, 0.4]))
+        resMarginal = ft.marginals(["winter"])
+        np.testing.assert_array_almost_equal(resMarginal.get_probabilities(), np.array([0.6, 0.4]))
         
     def test_jointree_marginals2(self):
         ft = FactorTree.create_jointree(self.bn)
-        resFactor = ft.marginals(["slippery_road"])
-        np.testing.assert_array_almost_equal(resFactor.get_potential(), np.array([0.364, 0.636]))
+        resMarginal = ft.marginals(["slippery_road"])
+        np.testing.assert_array_almost_equal(resMarginal.get_probabilities(), np.array([0.364, 0.636]))
         
     def test_jointree_marginals_trivial_evidence(self):
         ft = FactorTree.create_jointree(self.bn)
         ft.set_evidence({"slippery_road":"true"})
-        resFactor = ft.marginals(["slippery_road"])
-        np.testing.assert_array_almost_equal(resFactor.get_potential(), np.array([1.0, 0.0]))
+        resMarginal = ft.marginals(["slippery_road"])
+        np.testing.assert_array_almost_equal(resMarginal.get_probabilities(), np.array([1.0, 0.0]))
         
     def test_jointree_evidence_trivial(self):
         ft = FactorTree.create_jointree(self.bn)
         ft.set_evidence({"wet_grass": "false"})
-        resFactor = ft.marginals(["rain"])
-        np.testing.assert_array_almost_equal(resFactor.get_potential(), np.array([0.158858, 0.841142]))
+        resMarginal = ft.marginals(["rain"])
+        np.testing.assert_array_almost_equal(resMarginal.get_probabilities(), np.array([0.158858, 0.841142]))
         
     def test_jointree_marginal_evidence_trivial_multiple_evidence(self):
         ft = FactorTree.create_jointree(self.bn)
         ft.set_evidence({"sprinkler": "true", "rain": "false"})
-        resFactor = ft.marginals(["wet_grass"])
-        np.testing.assert_array_almost_equal(resFactor.get_potential(), np.array([0.1, 0.9]))
+        resMarginal = ft.marginals(["wet_grass"])
+        np.testing.assert_array_almost_equal(resMarginal.get_probabilities(), np.array([0.1, 0.9]))
     
         
     def test_jointree_marginal_evidence(self):
         ft = FactorTree.create_jointree(self.bn)
         ft.set_evidence({"winter": "true"})
-        resFactor = ft.marginals(["wet_grass"])
-        np.testing.assert_array_almost_equal(resFactor.get_potential(), np.array([0.668, 0.332]))
+        resMarginal = ft.marginals(["wet_grass"])
+        np.testing.assert_array_almost_equal(resMarginal.get_probabilities(), np.array([0.668, 0.332]))
         
     def test_jointree_marginal_evidence_multiple_evidence(self):
         ft = FactorTree.create_jointree(self.bn)
         ft.set_evidence( {"winter": "true", "rain": "false"})
-        resFactor = ft.marginals(["wet_grass"])
-        np.testing.assert_array_almost_equal(resFactor.get_potential(), np.array([0.02, 0.98]))
+        resMarginal = ft.marginals(["wet_grass"])
+        np.testing.assert_array_almost_equal(resMarginal.get_probabilities(), np.array([0.02, 0.98]))
         
     def test_jointree_marginal_soft_evidence(self):
         bn = BayesianNetwork()
@@ -236,8 +236,8 @@ class FactorEliminationTest(unittest.TestCase):
         tree = FactorTree.create_jointree(bn)
         tree.set_evidence({"cloth": np.array([0.7,0.25,0.05])}, softPosteriors=True)
         
-        np.testing.assert_array_almost_equal(tree.marginals(["cloth"]).get_potential(), np.array([0.7,0.25,0.05]))
-        np.testing.assert_array_almost_equal(tree.marginals(["sold"]).get_potential(), np.array([0.42,0.58]))
+        np.testing.assert_array_almost_equal(tree.marginals(["cloth"]).get_probabilities(), np.array([0.7,0.25,0.05]))
+        np.testing.assert_array_almost_equal(tree.marginals(["sold"]).get_probabilities(), np.array([0.42,0.58]))
         
 if __name__ == "__main__":
     #Workaround so that this script also finds the resource files when run directly

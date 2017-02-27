@@ -465,8 +465,8 @@ class Factor(object):
             else:
                 index.append(range(len(self.values[v])))
                     
-        if len(variables) == 0:
-            return self.potentials
+#        if len(variables) == 0:
+#            return self.potentials
                   
         return np.squeeze(np.copy(self.potentials[np.ix_(*index)]))
         

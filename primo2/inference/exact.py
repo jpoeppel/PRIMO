@@ -25,6 +25,7 @@ import networkx as nx
 
 from .factor import Factor
 from .order import Orderer
+from .marginal import Marginal
 
 class VariableElimination(object):
     
@@ -54,8 +55,8 @@ class VariableElimination(object):
                 
             Returns
             -------
-                Factor
-                A factor containing the desired marginals
+                Marginal
+                A Marginal object containing the desired marginals
         """
         
         if not evidence:
@@ -79,7 +80,7 @@ class VariableElimination(object):
         # Normalize to get conditional probability for the evidence
         resFactor.normalize()
                 
-        return resFactor
+        return Marginal.from_factor(resFactor)
         
     
     @staticmethod
@@ -111,8 +112,8 @@ class VariableElimination(object):
                 
             Returns
             -------
-                Factor
-                A factor containing the desired marginals
+                Marginal
+                A Marginal object containing the desired marginals
         """
         
         if not order:
@@ -163,7 +164,7 @@ class VariableElimination(object):
         # Normalize evidence
         buckets[-1].normalize()
 
-        return buckets[-1]
+        return Marginal.from_factor(buckets[-1])
         
 class FactorTree(object):
     
@@ -310,9 +311,9 @@ class FactorTree(object):
         if softPosteriors:
             #Compute the old/naive marignals for the evidence values which are
             #required to compute the proper likelihood ratio factor below
-            self.calculate_messages()
+            self._calculate_messages()
             for e in evidence:
-                oldMarginals[e] = self.marginals([e]).potentials
+                oldMarginals[e] = self.marginals([e], returnFactor=True).potentials
             self.reset_factors()
         
         # Add evidence to buckets
@@ -324,9 +325,9 @@ class FactorTree(object):
                 if e in nodeData["variables"]:
                     nodeData["factor"] = nodeData["factor"] * evidenceFactor
                     break
-        self.calculate_messages()
+        self._calculate_messages()
         
-    def marginals(self, variables):
+    def marginals(self, variables, returnFactor = False):
         """
             Function to compute marginals for the given variables, potentially
             given some evidence that was set beforehand using set_evidence.
@@ -344,15 +345,18 @@ class FactorTree(object):
                 if they are contained in any clique. To compute the joint
                 marginals for a fixed instantiation, this instantiation can
                 be set as evidence and its probability can be queried using
-                get_evidence_probability()                
+                get_evidence_probability()
+            returnFactors: Boolean, optional
+                If set to true, marginals will return a Factor object instead 
+                of a Marginal. Should only be used internally.                
                 
             Returns
             -------
-                Factor
-                A factor containing the desired marginals
+                Marginal
+                A Marginal object containing the desired marginals
         """
         if not self.tree.graph["messagesValid"]:
-            self.calculate_messages()
+            self._calculate_messages()
             
         # Determine clique containing variables:
         varSet = set(variables)
@@ -360,7 +364,7 @@ class FactorTree(object):
             if varSet.issubset(treeData["variables"]):
                 resFactor = treeData["factor"].marginalize(treeData["variables"] - varSet)
                 resFactor.normalize()
-                return resFactor
+                return Marginal.from_factor(resFactor) if not returnFactor else resFactor
         else:
             # No suitable clique found
             raise ValueError("No clique containing the variables {} was found.".format(variables))
@@ -369,7 +373,7 @@ class FactorTree(object):
     def get_evidence_probability(self):
          raise NotImplementedError("We still need to implement this...")
         
-    def calculate_messages(self):
+    def _calculate_messages(self):
         """
             Performs the two way (inward and outward) message passing with
             the first node as root. Is needed to validate the messages in the
@@ -377,13 +381,13 @@ class FactorTree(object):
         """
         try:
             root = self.tree.nodes()[0]
-            self.pull_messages(self.tree, root, None)
-            self.push_messages(self.tree, root, None)
+            self._pull_messages(self.tree, root, None)
+            self._push_messages(self.tree, root, None)
             self.tree.graph["messagesValid"] = True
         except IndexError:
             pass
         
-    def pull_messages(self, tree, curNode, parent):
+    def _pull_messages(self, tree, curNode, parent):
         """
             Performs the inward message passing from the given node to its
             parent according to Hugin's architecture.
@@ -402,7 +406,7 @@ class FactorTree(object):
         #Let neighbors collect messages
         for neighbor in tree.neighbors_iter(curNode):
             if neighbor != parent:
-                self.pull_messages(tree, neighbor, curNode)
+                self._pull_messages(tree, neighbor, curNode)
                       
         # Send message to parent
         if parent:
@@ -412,7 +416,7 @@ class FactorTree(object):
         else:
             return
             
-    def push_messages(self, tree, curNode, parent):
+    def _push_messages(self, tree, curNode, parent):
         """
             Performs the outwards message passing from the given node to its
             children other than the given parent according to Hugin's architecture.
@@ -436,6 +440,6 @@ class FactorTree(object):
                 tree.node[neighbor]["factor"] = tree.node[neighbor]["factor"] * (newSeqFactor / tree[curNode][neighbor]["factor"])
                 tree[curNode][neighbor]["factor"] = newSeqFactor
                 # Have neighbor pushing out further
-                self.push_messages(tree, neighbor, curNode)
+                self._push_messages(tree, neighbor, curNode)
             
         

@@ -22,6 +22,7 @@
 import random
 
 from .factor import Factor
+from .marginal import Marginal
 
 class MCMC(object):
     
@@ -69,9 +70,9 @@ class MCMC(object):
                 
             Returns
             -------
-                Factor
-                A factor over the given variables representing their joint probability 
-                given the evidence.
+                Maginal
+                A Marginal object over the given variables representing their 
+                joint probability given the evidence.
         """
         if not evidence:
             evidence = {}
@@ -81,7 +82,7 @@ class MCMC(object):
         variableValues = {v: self.bn.get_node(v).values for v in variables}
         res = Factor.from_samples(sampleChain, variableValues)
         
-        return res
+        return Marginal.from_factor(res)
         
         
     
