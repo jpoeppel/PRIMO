@@ -89,10 +89,8 @@ class VariableElimination(object):
         """
         
         working_factors = set(joint_factors)
-        print("elimination vars: ", elimination_variables)
         for var in elimination_variables:
             relevant_factors = set([f for f in working_factors if var in f[0].variableOrder])
-            print("relevant factors: ", relevant_factors)
             tmp_factor = self._combine_factors(relevant_factors)
             marginalized_factor = self._marginalize_joint_factor(tmp_factor, var)
             
@@ -138,7 +136,24 @@ class VariableElimination(object):
         
     
     def _optimize_locally(self, decisionNodeName):
-        nodes = [node for node in self.net.node_lookup.keys() if node != decisionNodeName and not isinstance(self.net.node_lookup[node], UtilityNode) and node not in self.net.node_lookup[decisionNodeName].parents]
+        """
+            Helper function to choose the optimal decision for the given
+            decisionNode. 
+            
+            Parameter
+            ---------
+            decisionNodeName: string
+                The name of the decision to be optimized
+                
+            Returns
+            -------
+                string
+                The optimal decision for this node
+        """
+        nodes = [node for node in self.net.node_lookup.keys() 
+                            if node != decisionNodeName and 
+                            not isinstance(self.net.node_lookup[node], UtilityNode) and 
+                            node not in self.net.node_lookup[decisionNodeName].parents]
         decisionNode = self.net.node_lookup[decisionNodeName]
         #Create joint factors
         factors = set([])
@@ -151,7 +166,7 @@ class VariableElimination(object):
         argmax = None
         maxVal = None
         for decision in decisionNode.values:
-            eu = reducedFactor[1].get_potential({decisionNodeName: decision})
+            eu = reducedFactor[1].get_potential({decisionNodeName: [decision]})
             if maxVal is None or eu > maxVal:
                 maxVal = eu
                 argmax = decision
@@ -160,9 +175,38 @@ class VariableElimination(object):
         
     
     def get_optimal_decisions(self, decisionOrder, fixedDecisions=None):
+        """
+            Iteratively computes the optimal decisions for all given decision
+            nodes according to the "Iterated optimization for influence diagrams
+            with acyclic relevance graphs" 
+            (cf. Koller, Friedman: Probabilistic Graphical Models, alg 23.3)
+            
+            Parameters
+            ----------
+            decisionOrder: list
+                A list of decisionNode names giving the ordering according to
+                the relevance graph of the network. (also known as the
+                inverted partial ordering of the decisions)
+                
+            fixedDecisions: dict (optional)
+                A dictionary which allows to optionally specify certain
+                decisions which should not be optimized
+                
+            Returns
+            -------
+                dict
+                A dictionary containing the optimal decision for each of the
+                decisionNodes
+        """
+        if fixedDecisions is None:
+            fixedDecisions = {}
+            
         #Initialize random fully mixed strategy
         for decisionNode in decisionOrder:
-            self.net.node_lookup[decisionNode].fully_mixed()
+            if not decisionNode in fixedDecisions:
+                self.net.node_lookup[decisionNode].fully_mixed()
+            else:
+                self.net.node_lookup[decisionNode].set_decision(fixedDecisions[decisionNode])
         
         solution = {}
         for decisionNode in decisionOrder:

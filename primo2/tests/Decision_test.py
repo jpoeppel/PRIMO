@@ -205,5 +205,14 @@ class VariableEliminationTest(unittest.TestCase):
         res = self.ve.expected_utility(decisions)
         self.assertEqual(res, 110000.01865)
         
+        
+    def test_get_optimal_decisions(self):
+        res = self.ve.get_optimal_decisions(["startup","education"])
+        
+        desired = {"startup": "no start up", "education":"no Phd"}
+        for k,v in res.items():
+            self.assertEqual(v, desired[k])
+            
+            
 if __name__ == "__main__":
     unittest.main()

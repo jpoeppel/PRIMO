@@ -87,8 +87,6 @@ print("Expected Utility for not doing a Phd: {}".format(ve.expected_utility(deci
 print("Optimal deciosn: ", ve.get_optimal_decisions(["education"]))
 
 
-import sys
-sys.exit()
 
 
 """
@@ -175,3 +173,6 @@ print("Expected Utility for doing a Phd + startup: {}".format(ve.expected_utilit
 print("Expected Utility for doing a Phd + no startup: {}".format(ve.expected_utility(decisions={"education":"do Phd", "startup": "no start up"})))
 print("Expected Utility for not doing a Phd + startup: {}".format(ve.expected_utility(decisions={"education":"no Phd", "startup": "start up"})))
 print("Expected Utility for not doing a Phd + no startup: {}".format(ve.expected_utility(decisions={"education":"no Phd", "startup": "no start up"})))
+
+
+print("Optimal deciosn: ", ve.get_optimal_decisions(["startup", "education"]))
