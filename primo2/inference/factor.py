@@ -61,6 +61,30 @@ class Factor(object):
         return variable in self.values
     
     def __add__(self, other):
+        """
+            Allows addition of two factors, required for utility nodes. 
+            Will not modify the two factors in any way but return a new factor 
+            instead.
+            
+            Currently this is NOT commutative!!
+            This means that the self-factor is used as base to create the resulting
+            factor and any new variables in the other factor are added afterwards!
+                        
+            Also value order is currently NOT checked between the two factors,
+            i.e. if one factor orders the values of some variable as "True", 
+            "False" and another sorts them "False", "True" 
+            the results will be wrong!
+            
+            Paramter
+            -------
+            other : Factor
+                The factor that is multiplied to this factor
+                
+            Returns
+            -------
+                Factor
+                The sum of this (utility) factor and the other factor.
+        """
         # Shortcuts for trivial factors
         if len(self.variableOrder) == 0:
             res = other.copy()
@@ -106,9 +130,7 @@ class Factor(object):
         swaparray = [f2.variableOrder.index(var) for var in res.variableOrder]
         f2.potentials = np.transpose(f2.potentials, swaparray)
         
-        # Pointwise multiplication which results in a factor where all instantiations
-        # are compatible to the instantiations of res and factor2
-        # See Definition 6.3 in "Modeling and Reasoning with Bayesian Networks" - Adnan Darwiche Chapter 6    
+        # Pointwise addition
         res.potentials = res.potentials + f2.potentials
         
         return res
@@ -144,9 +166,7 @@ class Factor(object):
             Currently this is NOT commutative!!
             This means that the self-factor is used as base to create the resulting
             factor and any new variables in the other factor are added afterwards!
-            They will however be added in the same order as they have been in
-            the other factor.
-            
+                        
             Also value order is currently NOT checked between the two factors,
             i.e. if one factor orders the values of some variable as "True", 
             "False" and another sorts them "False", "True" 
